@@ -9,34 +9,7 @@ var mimeTypes = {
 };
 // コンテンツをメモリ領域に記憶するためのオブジェクト
 var cache = {};
-// cacheAndDeliver関数を宣言。
-function cacheAndDeliver(f, cb) {
-  // fs.statメソッドは、コールバックの第2引数としてさまざまなファイル情報を持ったオブジェクトを返す。
-  fs.stat(f, function(err, stats){
-    // ctimeは、パーミッションの変更なども含めたファイルの変更日時のプロパティ。
-    var lastChanged = Date.parse(stats.ctime);
-    // キャッシュが存在し、かつ、最後にファイルが修正された日時がキャッシュの日時よりあとの場合は、isUpdatedにtrueを格納
-    var isUpdated = (cache[f]) && lastChanged > cache[f].timestamp;
-    // cacheが無い場合、または、キャッシュが古い場合（isUpdatedがtrueの場合）はキャッシュに保存
-    if(!cache[f] || isUpdated){
-      fs.readFile(f, function (err, data) {
-        console.log(f + 'をファイルから読み込みます。');
-        if(!err){
-          cache[f] = {
-            content : data,
-            // リクエストされたファイルが最後にキャッシュされた日時をキャッシュする
-            timestamp : Date.now() // Unixタイムスタンプを記録する
-          };
-        };
-        cb (err,data);
-      });
-      return;
-    }
-    // キャッシュがある場合は、キャッシュをコールバックで返す。
-    console.log(f + 'をキャッシュから読み込みます。');
-    cb(null, cache[f].content);
-  });
-}
+// cacheAndDeliver関数を削除して、コールバック関数内で処理を行う。
 http.createServer(function (request, response) {
   // サーバーで探すファイル名を格納するlookup変数を宣言
   var lookup = path.basename(decodeURI(request.url)) || 'index.html',
@@ -45,21 +18,42 @@ http.createServer(function (request, response) {
   // ファイルが存在するか判定
   fs.exists(f, function(exists){
     if(exists){
-      // ファイルが存在する場合は、cacheAndDeliver関数を非同期で読み込む。
-      cacheAndDeliver(f, function(err, data){
-        if(err){  // エラーハンドリング
-          response.writeHead(500);
-          response.end('Server Error!');
-          return;
-        }
-        var headers = {'Content-Type' : mimeTypes[path.extname(f)]};
+      var headers = {'Content-Type' : mimeTypes[path.extname(f)]};
+      if (cache[f]){
         response.writeHead(200, headers);
         response.end(data);
+        return;
+      }
+      // fs.createReadStreamは、readStreamオブジェクトを返す。readStreamオブジェクトは、fパラメータに渡されるパスで指定されたファイルのストリームオブジェクト。
+      // readStreamオブジェクトはEventEmitterクラスを継承しており、さまざまな場面でイベントを発行する。イベントハンドラを設定するには、addEventListenerを使うか、短縮形のonを使う。
+      // なお、ストリームは一度しかopenイベントを発行しないので、onの代わりにonceを使う。これにより、一度イベントが発生してコールバックを実行するとイベントリスナを破棄する。
+      var s = fs.createReadStream(f).once('open', function(){
+        // readStreamの開始時に一度だけ実行
+        response.writeHead(200, headers);
+        // pipeメソッドでストリームデータを受け取り、クライアントに送る。stream.pipeはストリームが終了すると自動的にresponse.endを呼び出す。
+        this.pipe(response);
+      }).once('error', function(e) {  // errorイベント発生時のハンドラ
+        console.log(e);
+        response.writeHead(500);
+        response.end('サーバーエラー！');
       });
-      // fs.readFileメソッドの外にreturnを置くことで、fs.existsがtrueを返した後に404レスポンスの生成等を行わないようにしている。
-      return;
+      // 上記でレスポンスデータをクライアントに送り続ける一方で、以下でそのコンテンツをメモリにキャッシュする
+      fs.stat(f, function(err, stats){
+        var bufferOffset = 0;
+        // cache[f].contentの値として、Bufferオブジェクトを宣言。引数には、fs.statのファイル長のデータを渡す。
+        // Bufferクラスのインスタンスは、生成時にバッファサイズ（バイト数）、配列もしくは文字列を指定しなければならないが、この場合はバッファサイズを指定する。
+        // バッファサイズは、非同期でファイルの情報を取得するfs.statメソッドのコールバックに渡されたstatsのsizeプロパティを取得して使用する。
+        cache[f] = {content: new Buffer(stats.size)};
+        // readStreamのdataイベントは、コールバック関数にBufferインスタンスを返す。
+        s.on('data', function(data){
+          // ストリームのデフォルトのbufferSizeは64KBで、これより小さいファイルは1回のchunk（データの小さい塊）でデータ全体を転送できるため、dataイベントは1回だけ発生する。
+          // このサイズより大きいファイルをキャッシュする場合は、chunkが1つずつ送られてくるたびにcache[f].contentプロパティに足していく。
+          // chunkはバイナリデータだが、+演算子で連結してしまうと文字列に変換されてしまう。そこで、cache[f].bufferのBufferインスタンスにcopyでコピーしている。
+          data.copy(cache[f].content, bufferOffset);
+          // chunkを足すたびに、bufferOffsetにchunkの長さを足して、chunkからBuffer.copyを呼ぶ際にコピー領域の先頭を表すbufferOffsetを2番めのパラメータに渡す。
+          bufferOffset += data.length;
+        });
+      });
     }
-    response.writeHead(404);
-    response.end('ページが見つかりません。');
   });
 }).listen(8080);
