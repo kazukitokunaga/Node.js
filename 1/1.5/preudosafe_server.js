@@ -9,7 +9,7 @@ http.createServer(function(request, response){
   // url.parseでurlを取得する場合は、path.normalizeでクリーンにしておくことで、悪意ある第三者からの攻撃（相対ディレクトリトラバーサルやヌルバイト攻撃）から守ることができる。
   lookup = path.normalize(lookup);
   lookup = (lookup === "/") ? '/indedx.html-serve' : lookup + '-serve';
-  var f = 'content-pseudosafe' + lookup;
+  var f = 'content-pseudosafe/' + lookup;
   console.log(f);
   fs.readFile(f, function(err, data){
     response.end(data);
