@@ -2,10 +2,10 @@ var http = require('http');
 var path = require('path');
 var fs = require('fs');
 // createServerのコールバック関数の外に宣言すると、リクエストされたファイルが存在する場合はpath.extnameで取得したファイルの拡張子をmimeTypesのオブジェクトで検索し、得られたContent-Typeの値をresponse.writeHeadに渡す。
-var mimeTyopes = {
+var mimeTypes = {
   '.js': 'text/javascript',
   '.html': 'text/html',
-  'css': 'text/css'
+  '.css': 'text/css'
 };
 http.createServer(function (request, response) {
   // サーバーで探すファイル名を格納するlookup変数を宣言
@@ -22,7 +22,7 @@ http.createServer(function (request, response) {
           response.end('Server Error!');
           return;
         }
-        var headers = {'contentTyoe' : mimeTyopes[path.extname(f)]};
+        var headers = {'Content-Type' : mimeTypes[path.extname(f)]};
         response.writeHead(200, headers);
         response.end(data);
       });

@@ -1,3 +1,1 @@
-window.onload = function () {
-  alert('Node最高！');
-};
+window.onload = function(){ alert('Node最高！'); };
