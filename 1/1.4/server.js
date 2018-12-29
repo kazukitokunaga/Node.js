@@ -66,7 +66,7 @@ http.createServer(function (request, response) {
           // Bufferクラスのインスタンスは、生成時にバッファサイズ（バイト数）、配列もしくは文字列を指定しなければならないが、この場合はバッファサイズを指定する。
           // バッファサイズは、非同期でファイルの情報を取得するfs.statメソッドのコールバックに渡されたstatsのsizeプロパティを取得して使用する。
           // キャッシュクリーニングのためのプロパティとしてtimestampを追加。
-          cache[f] = {content: new Buffer(stats.size), timestamp: Date.now()};
+          cache.store[f] = {content: new Buffer(stats.size), timestamp: Date.now()};
           // readStreamのdataイベントは、コールバック関数にBufferインスタンスを返す。
           s.on('data', function(data){
             // ストリームのデフォルトのbufferSizeは64KBで、これより小さいファイルは1回のchunk（データの小さい塊）でデータ全体を転送できるため、dataイベントは1回だけ発生する。
