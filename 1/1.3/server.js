@@ -11,19 +11,31 @@ var mimeTypes = {
 var cache = {};
 // cacheAndDeliver関数を宣言。
 function cacheAndDeliver(f, cb) {
-  // cacheが無い場合はキャッシュに保存
-  if(!cache[f]){
-    fs.readFile(f, function (err, data) {
-      if(!err){
-        cache[f] = {content : data};
-      }
-      cb (err,data);
-    });
-    return;
-  }
-  // キャッシュがある場合は、キャッシュをコールバックで返す。
-  console.log(f + 'をキャッシュから読み込みます。');
-  cb(null, cache[f].content);
+  // fs.statメソッドは、コールバックの第2引数としてさまざまなファイル情報を持ったオブジェクトを返す。
+  fs.stat(f, function(err, stats){
+    // ctimeは、パーミッションの変更なども含めたファイルの変更日時のプロパティ。
+    var lastChanged = Date.parse(stats.ctime);
+    // キャッシュが存在し、かつ、最後にファイルが修正された日時がキャッシュの日時よりあとの場合は、isUpdatedにtrueを格納
+    var isUpdated = (cache[f]) && lastChanged > cache[f].timestamp;
+    // cacheが無い場合、または、キャッシュが古い場合（isUpdatedがtrueの場合）はキャッシュに保存
+    if(!cache[f] || isUpdated){
+      fs.readFile(f, function (err, data) {
+        console.log(f + 'をファイルから読み込みます。');
+        if(!err){
+          cache[f] = {
+            content : data,
+            // リクエストされたファイルが最後にキャッシュされた日時をキャッシュする
+            timestamp : Date.now() // Unixタイムスタンプを記録する
+          };
+        };
+        cb (err,data);
+      });
+      return;
+    }
+    // キャッシュがある場合は、キャッシュをコールバックで返す。
+    console.log(f + 'をキャッシュから読み込みます。');
+    cb(null, cache[f].content);
+  });
 }
 http.createServer(function (request, response) {
   // サーバーで探すファイル名を格納するlookup変数を宣言
