@@ -7,6 +7,24 @@ var mimeTypes = {
   '.html': 'text/html',
   '.css': 'text/css'
 };
+// コンテンツをメモリ領域に記憶するためのオブジェクト
+var cache = {};
+// cacheAndDeliver関数を宣言。
+function cacheAndDeliver(f, cb) {
+  // cacheが無い場合はキャッシュに保存
+  if(!cache[f]){
+    fs.readFile(f, function (err, data) {
+      if(!err){
+        cache[f] = {content : data};
+      }
+      cb (err,data);
+    });
+    return;
+  }
+  // キャッシュがある場合は、キャッシュをコールバックで返す。
+  console.log(f + 'をキャッシュから読み込みます。');
+  cb(null, cache[f].content);
+}
 http.createServer(function (request, response) {
   // サーバーで探すファイル名を格納するlookup変数を宣言
   var lookup = path.basename(decodeURI(request.url)) || 'index.html',
@@ -15,8 +33,8 @@ http.createServer(function (request, response) {
   // ファイルが存在するか判定
   fs.exists(f, function(exists){
     if(exists){
-      // ファイルが存在する場合は、fs.readFileを非同期で読み込む。
-      fs.readFile(f, function(err, data){
+      // ファイルが存在する場合は、cacheAndDeliver関数を非同期で読み込む。
+      cacheAndDeliver(f, function(err, data){
         if(err){  // エラーハンドリング
           response.writeHead(500);
           response.end('Server Error!');
