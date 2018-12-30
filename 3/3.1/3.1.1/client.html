@@ -1,0 +1,15 @@
+<html>
+<head>
+  <script>
+    // whoは、profilesから特定の人のデータを取得するための文字列。この値は、JSONPリクエストURL（s.src）に組み込まれる。
+    var who = 'ryan';
+    function cb(o){
+      alert(o.name + ':' + o.description);
+    }
+    var s = document.createElement('script');
+    // クエリのcallbackには、上記で宣言した関数名を、whoの値には指定された人の名前を与えている。
+    s.src = 'http://localhost/?callback=cb&who=' + who;
+    document.getElementsByTagName("head")[0].appendChild(s);
+  </script>
+</head>
+</html>
