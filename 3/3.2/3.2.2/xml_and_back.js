@@ -10,6 +10,17 @@ function buildXML(rootObj, rootName){
   rootName = rootName || 'xml';
   xml += '<' + rootName + '>\n';
 
+  function attributes(obj, key) {
+    // "$"というキーを持ったプロパティを持っているかどうかを確認する。
+    if (obj[key].hasOwnProperty('$')) {
+      xml = xml.substr(0, xml.length - 1); // openタグから>を削除
+      Object.keys(obj[key]['$']).forEach(function (attrKey) {
+        xml += ' ' + attrKey + '="' + obj[key]['$'][attrKey] + '"';
+      });
+      xml += ">"; // openタグから削除した>を再度加える
+      delete obj[key]['$']; // 再度オブジェクトとしてtraverse関数で再帰しないように削除しておく
+    }
+  }
   (function traverse(obj){
     Object.keys(obj).forEach(function (key) {
       var open = '<' + key + '>';
@@ -33,6 +44,8 @@ function buildXML(rootObj, rootName){
 
       xml += open;
 
+      attributes(obj, key);
+
       // 渡された引数が非オブジェクトだった場合の処理
       if(nonObj){
         xml += (isFunc) ? obj[key]() : obj[key];
@@ -55,5 +68,5 @@ console.log(profiles); // XMLをコンソールに出力する
 
 parser.parseString(profiles, function (err, obj){
   profiles = obj.profiles;
-  console.log(profiles.bert);
+  console.log(profiles.ryan);
 })
