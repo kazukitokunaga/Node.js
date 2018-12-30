@@ -11,11 +11,22 @@ http.createServer(function(req, res){
   var download = Object.create(options);
   // 宣言したオブジェクトに2つのプロパティを追加。
   // 1つはreadStreamのdataイベントで発生するファイルデータの一時的な格納場所としてのプロパティ
+  download.readStreamOptions = {};
   download.chunks = new Buffer(download.fileSize);
   // もう1つは、ディスクから読み込まれたデータのバイト数を格納するプロパティ
   download.bufferOffset = 0;
-  res.writeHeader(200, {'Content-Length':oprions.fileSize});
-  fs.createReadStream(options.file)
+  download.statusCode = 200;
+  download.headers = {'Content-Length':download.fileSize};
+  if(req.headers.range){
+    download.start = req.headers.range.replace('bytes=', '').split('-')[0];
+    download.readStreamOptions = {start: +download.start};
+    download.headers['Content-Range'] = 'bytes ' + download.start +
+      '-' + download.fileSize + '/' + download.fileSize;
+    download.statusCode = 206; // Partial Content
+    download.headers['Content-Length'] = download.fileSize - download.start;
+  }
+  res.writeHeader(download.statusCode, download.headers);
+  fs.createReadStream(download.file, download.readStreamOptions)
     // readStreamのdataイベント発生時
     .on('data', function(chunk){
       chunk.copy(download.chunks, download.bufferOffset);
@@ -51,6 +62,14 @@ function throttle(download, cb){
           cb(download.chunks.slice(bytesSent, bytesOut));
           loop(bytesOut);
           return;
+        }
+        // bytesOutがdownloas.headers['Content-Length']のバッファサイズ（つまり、送信するファイルサイズ）と同じか大きい場合
+        if (bytesOut >= download.headers['Content-Length']){
+          if(download.bufferOffset == download.headers['Content-Length']){
+            // sliceで残りのすべてのバッファを切り出して送信する。
+            cb(download.chunks.slice(bytesSent));
+            return; // 再帰終了
+          }
         }
         // bytesOutがdownloas.chunksのバッファサイズ（つまり、送信するファイルサイズ）と同じか大きい場合
         if (bytesOut >= download.chunks.length){
