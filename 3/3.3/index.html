@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+  <style>
+      #frm, #raw{
+        display: block;
+        float: left;
+        width: 210px;
+      }
+      #raw{
+        height:150px;
+        width:310px;
+        margin-left:0.5em;
+      }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <form id="frm">
+      プロフィール：<select id="profiles" v-model="selected">
+        <option v-for="option in responseProfiles" v-bind:value="option">
+          {{ option }}
+        </option>
+      </select>
+      <span>Selected: {{ selected }}</span>
+      <br>
+      フォーマット：<select id="formats" v-model="selectedFormats">
+        <option v-for="option in formats" v-bind:value="option">
+          {{ option }}
+        </option>
+      </select>
+      <span>Selected: {{ selectedFormats }}</span>
+      <br>
+      <br>
+      <div id="output"></div>
+    </form>
+    <button v-on:click="submit">取得する</button>
+    <textarea id="raw"></textarea>
+    <br>画面を読み込んだ時のGETリクエスト結果：
+    <br>{{ responseProfiles }}
+    <br>ボタンを押した時のGETリクエスト結果：
+    <br>{{ responseProfile }}
+  </div>
+  <!-- <script>
+    $.get('http://localhost:8080/profiles', function (profile_names) {
+      $.each(profile_names, function (i, pname) {
+        $('#profiles').append('<option>' + pname + '</option>')
+      });
+    }, 'json');
+
+    $('#formats, #profiles').change(function () {
+      var format = $('#formats').val();
+      $.get(
+        'http://localhost:8080/profile/' + $('#profiles') + '.' + format,
+        function (profile, stat, jqXHR) {
+          var cT = jqXHR.getResponseHeader('Content-Type');
+          $('#raw').val(profile);
+          $('#output').html('');
+          if (cT === 'application/json') {
+            $.each($.parseJSON(profile),
+            function (k, v) {
+              $('output').append('<b>' + k + '</b> : ' + v + '<br>');
+            });
+            return;
+          }
+          if (cT === 'application/XML'){
+            profile = jqXHR.responseXML.firstChild.childNodes;
+            $.each(profile, function (k, v) {
+              if(v && v.nodeType === 1){
+                $('#output').append('<b>' + v.tagName + '</b> : ' + v.textContent + '<br>');
+              }
+            });
+          }
+        }, 'text');
+    });
+  </script> -->
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script>
+    var app = new Vue({
+      el: '#app',
+      data: {
+        message: 'Hello Vue!',
+        responseProfile: {},
+        responseProfiles: {},
+        formats: ['json', 'xml'],
+        selected: '',
+        selectedFormats: '',
+        profile: '',
+      },
+      computed:{
+        url(){ return 'http://localhost:8080/profile/' + this.selected.toString() + '.' + this.selectedFormats.toString() }
+      },
+      methods:{
+        async submit(){
+          const profile = await axios.get(this.url)
+          this.responseProfile = profile.data
+        }
+      },
+      async created () {
+          const profiles = await axios.get('http://localhost:8080/profiles')
+          this.responseProfiles = profiles.data
+      },
+    })
+  </script>
+</body>
+</html>
