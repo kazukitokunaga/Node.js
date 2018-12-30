@@ -14,18 +14,34 @@ function buildXML(rootObj, rootName){
     Object.keys(obj).forEach(function (key) {
       var open = '<' + key + '>';
       var close = '</' + key + '>\n';
-      var isTxt = (obj[key] && {}.toString.call(obj[key]) !== '[object Object]');
+      // 渡された引数が「非オブジェクトかどうか」を判定するフラグ
+      var nonObj = (obj[key] && {}.toString.call(obj[key]) !== "[object Object]");
+      // 渡された引数が「配列かどうか」を判別するフラグ
+      var isArray = Array.isArray(obj[key]);
+      // 渡された引数が「関数かどうか」を判別するフラグ
+      var isFunc = (typeof obj[key] === "function");
+
+      // 渡された引数が配列だった場合の処理
+      if(isArray){
+        obj[key].forEach(function (xmlNode){
+          var childNode = {};
+          childNode[key] = xmlNode;
+          traverse(childNode);
+        });
+        return;
+      }
 
       xml += open;
 
-      if(idTxt){
-        xml += onj[key];
+      // 渡された引数が非オブジェクトだった場合の処理
+      if(nonObj){
+        xml += (isFunc) ? obj[key]() : obj[key];
         xml += close;
         return;
       }
 
       xml += '\n';
-      traverse(onj[key]);
+      traverse(obj[key]);
       xml += close;
     });
   }(rootObj));
@@ -39,6 +55,5 @@ console.log(profiles); // XMLをコンソールに出力する
 
 parser.parseString(profiles, function (err, obj){
   profiles = obj.profiles;
-  profiles.felix.fullname = "Felix Geisendörfer";
-  console.log(profiles.felix);
+  console.log(profiles.bert);
 })
