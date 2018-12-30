@@ -1,11 +1,20 @@
+var xml2js = new (require('xml2js')).Parser({
+  trim: true,
+  explicitArray: false
+});
 var http = require('http');
 var fs = require('fs');
 var path = require('path');
 var profiles = require('./profiles');
 var buildXml = require('./buildXml');
+var buildXmljs = buildXml.toString();
 var index = fs.readFileSync('index.html');
 
-var mimes = { xml: "application/xml", json: "application/json" };
+var mimes = {
+  js: "application/javascript",
+  xml: "application/xml",
+  json: "application/json"
+};
 
 // formatパラメータにextname（拡張子）を渡すことで、contentパラメータに渡されたオブジェクトをJSONまたはXMLで返す。
 function output(content, format, rootNode) {
@@ -28,10 +37,47 @@ var routes = {
   '/profile': function (format, basename) {
     // outputメソッドの引数に拡張子とファイル名を渡す。
     return output(profiles[basename], format, basename);
-  }
+  },
+  'buildXml': function (ext) {
+    if (ext === 'js') {
+      return buildXmljs;
+    }
+  },
 };
 
+function addProfile(req, cb) {
+  var newProf;
+  var profileName;
+  var pD = ''; // POSTデータ
+  req.on('data', function (chunk) {
+    // postされたデータをpDにまとめて格納
+    pD += chunk;
+  }).on('end', function () {
+    var contentType = req.headers['content-type'];
+    if (contentType === 'application/json') {
+      newProf = JSON.parse(pD);
+    }
+    if (contentType === 'application/xml') {
+      xml2js.parseString(pD, function (err, obj) {
+        newProf = obj;
+      });
+    }
+    // オブジェクトを形成
+    profileName = newProf.profileName;
+    profiles[profileName] = newProf;
+    // 重複するprofileNameは削除
+    delete profiles[profileName].profileName;
+    cb(output(profiles[profileName], contentType.replace('application/', ''), profileName));
+  });
+}
+
 http.createServer(function (req, res) {
+  if (req.method === 'POST'){
+    addProfile(req, function (output) {
+      res.end(output);
+    });
+    return;
+  }
   var dirname = path.dirname(req.url); // ディレクトリ名
   var extname = path.extname(req.url); // 拡張子
   var basename = path.basename(req.url, extname); // ファイル名
