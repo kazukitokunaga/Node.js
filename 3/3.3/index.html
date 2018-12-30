@@ -1,34 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-  <script src="buildXml.js"></script>
   <style>
       #frm, #raw{
         display: block;
         float: left;
-        width: 320px;
+        width: 210px;
       }
       #raw{
-        height:300px;
-        width:320px;
+        height:150px;
+        width:310px;
         margin-left:0.5em;
-      }
-      #add{
-        display:block;
-        float: left;
-        margin-left:1.5em;
-      }
-      #add div{
-        display: table-row;
-      }
-      #add label{
-        width:320px;
-        width:5.5em;
-      }
-      #div button{
-        float: right;
       }
   </style>
 </head>
@@ -52,23 +35,12 @@
       <br>
       <div id="output"></div>
     </form>
-    <br><button v-on:click="submit">取得する</button>
-    <br><textarea id="raw"></textarea>
+    <button v-on:click="submit">取得する</button>
+    <textarea id="raw"></textarea>
     <br>画面を読み込んだ時のGETリクエスト結果：
     <br>{{ responseProfiles }}
     <br>ボタンを押した時のGETリクエスト結果：
     <br>{{ responseProfile }}
-
-    <br><form id="add">
-      <div><label>profile name</label><input v-model="responseProfile.profileName" name="profileName"></div>
-      <div><label>name</label><input v-model="responseProfile.name" name="name"></div>
-      <div><label>irc</label><input v-model="responseProfile.irc" name="irc"></div>
-      <div><label>twitter</label><input v-model="responseProfile.twitter" name="twitter"></div>
-      <div><label>github</label><input v-model="responseProfile.github" name="github"></div>
-      <div><label>location</label><input v-model="responseProfile.location" name="location"></div>
-      <div><label>desctiption</label><input v-model="responseProfile.desctiption" name="desctiption"></div>
-      <div><button v-on:click="update">Add</button></div>
-    </form>
   </div>
   <!-- <script>
     $.get('http://localhost:8080/profiles', function (profile_names) {
@@ -110,15 +82,7 @@
       el: '#app',
       data: {
         message: 'Hello Vue!',
-        responseProfile: {
-          profileName: '',
-          name: '',
-          irc: '',
-          twitter: '',
-          github: '',
-          location: '',
-          desctiption: '',
-        },
+        responseProfile: {},
         responseProfiles: {},
         formats: ['json', 'xml'],
         selected: '',
@@ -132,11 +96,7 @@
         async submit(){
           const profile = await axios.get(this.url)
           this.responseProfile = profile.data
-        },
-        async update() {
-          const response = await axios.post('/', this.responseProfile)
-          this.responseProfile = response.data
-        },
+        }
       },
       async created () {
           const profiles = await axios.get('http://localhost:8080/profiles')
@@ -146,5 +106,3 @@
   </script>
 </body>
 </html>
-
-<!DOCTYPE html>
