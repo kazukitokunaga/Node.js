@@ -42,8 +42,12 @@ function buildXML(rootObj, rootName){
         return;
       }
 
-      xml += open;
+      if (key === '_') {
+        xml += obj[key] + '\n';
+        return;
+      }
 
+      xml += open;
       attributes(obj, key);
 
       // 渡された引数が非オブジェクトだった場合の処理

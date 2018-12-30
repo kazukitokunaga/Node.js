@@ -26,7 +26,8 @@ module.exports = {
     twitter: "tjholowaychuk",
     github: "visionmedia",
     location:{'$': {city: 'Victoria',country: 'Canada' }},
-    description: "Author of express, jade and other popular modules"
+    description: "Author of express, jade and other popular modules",
+    region: {'_':'British Columbia', '$':{type: 'province'}}
   }, felix:{
     name: "Felix Geisendorfer",
     irc:"felixge",
