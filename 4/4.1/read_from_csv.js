@@ -4,7 +4,7 @@ var reader = csv.createCsvFileReader('custom_data.csv', {
   'quote': '|',
   'escape': '\\'
 });
-var data = [];
+var data = ｀｀｀｀[];
 
 reader.on('data', function(rec){
   data.push(rec);
