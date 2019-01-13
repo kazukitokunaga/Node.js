@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+</head>
+<body>
+  <div id="output"> </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    var socket = io.connect('http://localhost:8080');
+    var output = document.getElementById('output');
+
+    function square(num){
+      output.innerHTML = '<div>' + num + ' x ' + ' is ' + (num * num) + '</div>';
+    }
+
+    socket.on('connect', function(){
+      // emitの最後の引数が関数の場合、リモート側で定義されているカスタムイベントのハンドラでcbパラメータを生成する。つまり、コールバックを取得してsquare関数を実行する。
+      socket.emit('give me a number', square);
+      // give me a sentenceイベントをキャッチしてコールバックを返す。
+      socket.on('give me a sentence', function(cb){
+        cb('これがその文章です。');
+      });
+
+      // messageイベントをキャッチして関数を実行。
+      socket.on('message', function(msg){
+        output.innerHTML += '<div>' + msg + 'を受信しました。</div>'
+      });
+    });
+  </script>
+</body>
+</html>
