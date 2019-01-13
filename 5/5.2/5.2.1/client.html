@@ -19,14 +19,9 @@
       }
 
       socket.on('connect', function(){
-        send.addEventListener('click', function(){
-          var msg = document.getElementById('message').value;
-          socket.send('msg');
-          output.innerHTML += logStr('送信', msg);
-        });
-
-        socket.on('message', function(msg){
-          output.innerHTML += logStr('受信', msg);
+        socket.on('hello', function(msg){
+          output.innerHTML += '<div>Hello' + msg + '</div>';
+          socket.emit('helloback', 'クライアント')
         });
       });
     }());

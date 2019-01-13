@@ -11,10 +11,8 @@ var io = require('socket.io').listen(plainHttpServer);
 io.set('origins', ['localhost:8080', '127.0.0.1:8080']);
 // io.socketのconnectionメソッドを待機
 io.sockets.on('connection', function(socket){
-  socket.on('message', function(msg) {
-    // 受け取ったメッセージがHelloであれば、socket.io!という文字列をレスポンスで返す
-    if(msg === 'Hello'){
-      socket.send('socket.io!');
-    }
+  socket.emit('hello', 'socket.io!');
+  socket.on('helloback', function(from){
+    console.log(from + 'からhellobackを受信しました。');
   });
 });
